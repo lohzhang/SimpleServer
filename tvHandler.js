@@ -51,7 +51,13 @@ function callLgtvAPI(retryTimes) {
 let moduleFunctions = 
 {
   toastFunction : function(message, retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       if (!message) {
         /*
          * Create default message if message is not provided. Default message
@@ -62,24 +68,29 @@ let moduleFunctions =
       }
 
       lgtv.show_float(message, (err) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.toastFunction(message, retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   turnOffFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.turn_off(() => {
         res.sendStatus(200);
       });
@@ -88,13 +99,16 @@ let moduleFunctions =
       discover_ip(() => {
         moduleFunctions.turnOffFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   setVolumeFunction : function(vol, retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       if (!vol) {
         vol = 0;
       }
@@ -104,24 +118,29 @@ let moduleFunctions =
       }
 
       lgtv.set_volume(vol, function(err, response) {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.setVolumeFunction(vol, retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   getVolumeFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.volume((err, retVolume) => {
         if (!err) {
           moduleFunctions.toastFunction(retVolume, retryTimes, res);
@@ -132,175 +151,236 @@ let moduleFunctions =
       discover_ip(() => {
         moduleFunctions.getVolumeFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
-  toggleMuteFunction : function(retryTimes, res) {
-    // TODO: re-implement this feature. Need to create separate mute and unmute functions.
-    res.sendStatus(200);
+  toggleMuteFunction : function(setMute, retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      lgtv.set_mute(setMute, (err) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.toggleMuteFunction(setMute, retryTimes - 1, res);
+      });
+    });
   },
   playFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.input_media_play((err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.playFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   pauseFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.input_media_pause((err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.pauseFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   stopFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.input_media_stop((err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.stopFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   getAppListFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
      lgtv.apps((err) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.getAppListFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   launchYoutubeFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.start_app('youtube.leanback.v4', (err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.launchYoutubeFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   launchAmazonInstantVideoFunction : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.start_app('amazon.html', function(err, response) {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.launchAmazonInstantVideoFunction(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   switchToHDMI_1 : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.set_input('HDMI_1', (err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.switchToHDMI_1(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   sendKey : function(key, retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.sendKey(key, (err, response) => {
-        if (!err) {
-          lgtv.disconnect(() => {
+        lgtv.disconnect(() => {
+          if (!err) {
             res.sendStatus(200);
-          });
-        }
+          } else {
+            res.sendStatus(400);
+          }
+        });
       });
     }, (reject) => {
       console.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.sendKey(key, retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
-      res.sendStatus(500);
     });
   },
   playNext : function(retryTimes, res) {
-    callLgtvAPI(retryTimes).then(() => {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
       lgtv.sendKey('RIGHT', (err, response) => {
         if (!err) {
           setTimeout(() => {
             lgtv.sendKey('ok', (err, response) => {
               lgtv.disconnect(() => {
-                res.sendStatus(200);
+                if (!err) {
+                  res.sendStatus(200);
+                } else {
+                  res.sendStatus(400);
+                }
               });
             });
           }, timeout_ms);
@@ -311,9 +391,102 @@ let moduleFunctions =
       discover_ip(() => {
         moduleFunctions.playNext(retryTimes - 1, res);
       });
-    }).catch((error) => {
-      console.log(error);
+    });
+  },
+  mediaForward : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      lgtv.input_media_forward((err) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.mediaForward(retryTimes - 1, res);
+      });
+    });
+  },
+  mediaRewind : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      lgtv.input_media_rewind((err) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.mediaRewind(retryTimes - 1, res);
+      });
+    });
+  },
+  passBeginning : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
       res.sendStatus(500);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      /*
+       * Each Forward function forwards 10 seconds.
+       * Usually header part is ~1minute to 1minute and a half.
+       */
+      const rewindStep = 8;
+      const forwardDelay = 200;
+      let rewindCall = (rewindStep) => {
+        setTimeout(() => {
+          lgtv.input_media_forward((err) => {
+            if (err) {
+              console.log("Error: " + err);
+              return;
+            }
+
+            if (rewindStep <= 0) {
+              lgtv.input_media_play((err, response) => {
+                lgtv.disconnect(() => {
+                  if(!err) {
+                    res.sendStatus(200);
+                  } else {
+                    res.sendStatus(400);
+                  }
+                });
+              });
+              return;
+            }
+
+            return rewindCall(rewindStep - 1);
+          });
+        }, forwardDelay);
+      };
+
+      rewindCall(rewindStep);
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.passBeginning(retryTimes - 1, res);
+      });
     });
   },
   mediaForward : function(retryTimes, res) {

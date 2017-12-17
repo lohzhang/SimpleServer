@@ -58,9 +58,17 @@ app.get('/getVolume', function(req, res) {
   }
 });
 
-app.post('/toggleMute', function(req, res) {
+app.post('/mute', function(req, res) {
   if (myAuth.isAuthenticated(req)) {
-    handler.toggleMuteFunction(maxRetryTimes, res);
+    handler.toggleMuteFunction(true, maxRetryTimes, res);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+app.post('/unMute', function(req, res) {
+  if (myAuth.isAuthenticated(req)) {
+    handler.toggleMuteFunction(false, maxRetryTimes, res);
   } else {
     res.sendStatus(401);
   }
@@ -180,20 +188,29 @@ app.post('/moveRight', function(req, res) {
 });
 
 app.post('/mediaForward', function(req, res) {
-  //if (myAuth.isAuthenticated(req)) {
+  if (myAuth.isAuthenticated(req)) {
     handler.mediaForward(maxRetryTimes, res);
-  //} else {
-  //  res.sendStatus(401);
-  //}
+  } else {
+    res.sendStatus(401);
+  }
 });
 
 app.post('/mediaRewind', function(req, res) {
-  //if (myAuth.isAuthenticated(req)) {
+  if (myAuth.isAuthenticated(req)) {
     handler.mediaRewind(maxRetryTimes, res);
-  //} else {
-  //  res.sendStatus(401);
-  //}
+  } else {
+    res.sendStatus(401);
+  }
 });
+
+app.post('/passBeginning', function(req, res) {
+  if (myAuth.isAuthenticated(req)) {
+    handler.passBeginning(maxRetryTimes, res);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
 app.listen(port, function() {
   console.log('Server listening port 3000');
 });

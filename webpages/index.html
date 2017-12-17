@@ -17,7 +17,8 @@
 		<link rel="shortcut icon" href="about:blank">
 		<button type="button" id="turnOffButton" onClick="$.post('/turnOff')">Turn Off</button>
 		<button type="button" id="getVolumeButton" onClick="$.get('/getVolume')">Get Volume</button>
-		<button type="button" id="toggleMuteButton" onClick="$.post('/toggleMute')" disabled>Toggle Mute</button>
+		<button type="button" id="toggleMuteButton" onClick="$.post('/mute')">Mute</button>
+		<button type="button" id="toggleMuteButton" onClick="$.post('/unMute')">Unmute</button>
 		<button type="button" id="playButton" onClick="$.post('/play')">Play</button>
 		<button type="button" id="pauseButton" onClick="$.post('/pause')">Pause</button>
 		<button type="button" id="stopButton" onClick="$.post('/stop')">Stop</button>
@@ -34,6 +35,7 @@
 		<button type="button" id="Select" onClick="$.post('/playNext')">playNext</button>
 		<button type="button" id="Select" onClick="$.post('/mediaForward')">mediaForward</button>
 		<button type="button" id="Select" onClick="$.post('/mediaRewind')">mediaRewind</button>
+		<button type="button" id="Select" onClick="$.post('/passBeginning')">passBeginning</button>
 		<form action="/setVolume" method="post">
 			Set Volume: <input type="number" name="volume" min="0" max="100"><input type="submit" value="Submit">
 		</form>
