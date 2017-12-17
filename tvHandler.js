@@ -29,10 +29,6 @@ function discover_ip(callback) {
 }
 
 function callLgtvAPI(retryTimes) {
-  if (retryTimes < 0) {
-    throw new Error('Max attempt reached.');
-  }
-
   return new Promise((resolve, reject) => {
     let timeout = setTimeout(() => {
       console.log('LGTV connection timeout');
@@ -318,6 +314,50 @@ let moduleFunctions =
     }).catch((error) => {
       console.log(error);
       res.sendStatus(500);
+    });
+  },
+  mediaForward : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(500);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      lgtv.input_media_forward((err) => {
+        if (!err) {
+          lgtv.disconnect(() => {
+            res.sendStatus(200);
+          });
+        }
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.mediaForward(retryTimes - 1, res);
+      });
+    });
+  },
+  mediaRewind : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(500);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      lgtv.input_media_rewind((err) => {
+        if (!err) {
+          lgtv.disconnect(() => {
+            res.sendStatus(200);
+          });
+        }
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.mediaRewind(retryTimes - 1, res);
+      });
     });
   }
 }

@@ -179,6 +179,21 @@ app.post('/moveRight', function(req, res) {
   }
 });
 
+app.post('/mediaForward', function(req, res) {
+  //if (myAuth.isAuthenticated(req)) {
+    handler.mediaForward(maxRetryTimes, res);
+  //} else {
+  //  res.sendStatus(401);
+  //}
+});
+
+app.post('/mediaRewind', function(req, res) {
+  //if (myAuth.isAuthenticated(req)) {
+    handler.mediaRewind(maxRetryTimes, res);
+  //} else {
+  //  res.sendStatus(401);
+  //}
+});
 app.listen(port, function() {
   console.log('Server listening port 3000');
 });
