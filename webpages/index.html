@@ -36,6 +36,12 @@
 		<button type="button" id="Select" onClick="$.post('/mediaForward')">mediaForward</button>
 		<button type="button" id="Select" onClick="$.post('/mediaRewind')">mediaRewind</button>
 		<button type="button" id="Select" onClick="$.post('/passBeginning')">passBeginning</button>
+		<button type="button" id="Select" onClick="$.post('/volumeUp')">volume Up</button>
+		<button type="button" id="Select" onClick="$.post('/controlVolume')" disabled>volume Up Up</button>
+		<button type="button" id="Select" onClick="$.post('/controlVolume')" disabled>volume Up Up Up</button>
+		<button type="button" id="Select" onClick="$.post('/volumeDown')">volume Down</button>
+		<button type="button" id="Select" onClick="$.post('/controlVolume')" disabled>volume Down Down</button>
+		<button type="button" id="Select" onClick="$.post('/controlVolume')" disabled>volume Down Down Down</button>
 		<form action="/setVolume" method="post">
 			Set Volume: <input type="number" name="volume" min="0" max="100"><input type="submit" value="Submit">
 		</form>

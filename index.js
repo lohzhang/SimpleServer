@@ -50,6 +50,30 @@ app.post('/setVolume', function(req, res) {
   }
 });
 
+app.post('/volumeUp', function(req, res) {
+  //if (myAuth.isAuthenticated(req)) {
+    handler.volumeUpFunction(req.body.volumeControl, maxRetryTimes, res);
+  /*} else {
+    res.sendStatus(401);
+  }*/
+});
+
+app.post('/volumeDown', function(req, res) {
+  //if (myAuth.isAuthenticated(req)) {
+    handler.volumeDownFunction(req.body.volumeControl, maxRetryTimes, res);
+  /*} else {
+    res.sendStatus(401);
+  }*/
+});
+
+app.post('/controlVolume', function(req, res) {
+  //if (myAuth.isAuthenticated(req)) {
+    handler.controlVolumeFunction(req.body.volumeControl, maxRetryTimes, res);
+  /*} else {
+    res.sendStatus(401);
+  }*/
+});
+
 app.get('/getVolume', function(req, res) {
   if (myAuth.isAuthenticated(req)) {
     handler.getVolumeFunction(maxRetryTimes, res);

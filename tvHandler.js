@@ -133,6 +133,113 @@ let moduleFunctions =
       });
     });
   },
+  volumeUpFunction : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+
+    callLgtvAPI().then(() => {
+      if (!volumeControl) {
+        res.sendStatus(400);
+        return;
+      }
+
+      lgtv.input_volumeup((err, response) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.volumeUpFunction(retryTimes - 1, res);
+      });
+    });
+  },
+  volumeDownFunction : function(retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+
+    callLgtvAPI().then(() => {
+      if (!volumeControl) {
+        res.sendStatus(400);
+        return;
+      }
+
+      lgtv.input_volumedown((err, response) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      });
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.volumeDownFunction(retryTimes - 1, res);
+      });
+    });
+  },
+  controlVolumeFunction : function(volumeControl, retryTimes, res) {
+    if (retryTimes <= 0) {
+      console.log('Max attempt reached.');
+      res.sendStatus(400);
+      return;
+    }
+
+    callLgtvAPI().then(() => {
+      if (!volumeControl) {
+        res.sendStatus(400);
+        return;
+      }
+
+      let volumeControlArray = volumeControl.split(/\s+/);
+      let volumeControlTarget = volumeControlArray[0];
+      if (!volumeControlTarget ||
+            volumeControlTarget.toUpperCase() != 'UP' ||
+            volumeControlTarget.toUpperCase() != 'DOWN') {
+        console.log("Invalid volume control input.");
+        res.sendStatus(400);
+        return;
+      }
+
+      let volumeChangeStep = volumeControlArray.length;
+
+      let callbackFunction = (err, response) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            res.sendStatus(400);
+          }
+        });
+      };
+
+      if (volumeControlTarget.toUpperCase() === 'UP') {
+        lgtv.input_volumeup(callbackFunction);
+      } else {
+        lgtv.input_volumedown(callbackFunction);
+      }
+    }, (reject) => {
+      console.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.controlVolumeFunction(volumeControl, retryTimes - 1, res);
+      });
+    });
+  },
   getVolumeFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
       console.log('Max attempt reached.');
