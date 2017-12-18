@@ -51,27 +51,37 @@ app.post('/setVolume', function(req, res) {
 });
 
 app.post('/volumeUp', function(req, res) {
-  //if (myAuth.isAuthenticated(req)) {
-    handler.volumeUpFunction(req.body.volumeControl, maxRetryTimes, res);
-  /*} else {
+  if (myAuth.isAuthenticated(req)) {
+    handler.volumeUpFunction(maxRetryTimes, res);
+  } else {
     res.sendStatus(401);
-  }*/
+  }
 });
 
 app.post('/volumeDown', function(req, res) {
-  //if (myAuth.isAuthenticated(req)) {
-    handler.volumeDownFunction(req.body.volumeControl, maxRetryTimes, res);
-  /*} else {
+  if (myAuth.isAuthenticated(req)) {
+    handler.volumeDownFunction(maxRetryTimes, res);
+  } else {
     res.sendStatus(401);
-  }*/
+  }
 });
 
 app.post('/controlVolume', function(req, res) {
-  //if (myAuth.isAuthenticated(req)) {
-    handler.controlVolumeFunction(req.body.volumeControl, maxRetryTimes, res);
-  /*} else {
+  var volumeTarget = 0;
+  var volumeChangeDirection = req.body.volumeControlDirection;
+
+  try {
+     volumeTarget = parseInt(req.body.volumeControl);
+  } catch(error) {
+    res.status(400).send('Invalid Input. Please provide an integer number.');
+    return;	
+  }
+
+  if (myAuth.isAuthenticated(req)) {
+    handler.controlVolumeFunction(volumeTarget, volumeChangeDirection, maxRetryTimes, res);
+  } else {
     res.sendStatus(401);
-  }*/
+  }
 });
 
 app.get('/getVolume', function(req, res) {
@@ -230,6 +240,15 @@ app.post('/mediaRewind', function(req, res) {
 app.post('/passBeginning', function(req, res) {
   if (myAuth.isAuthenticated(req)) {
     handler.passBeginning(maxRetryTimes, res);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+app.post('/playProgressControl', function(req, res) {
+  if (myAuth.isAuthenticated(req)) {
+    handler.playProgressControl(req.body.playProgressControlDirection, req.body.playProgressControlStep,
+                                                                                      maxRetryTimes, res);
   } else {
     res.sendStatus(401);
   }

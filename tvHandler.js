@@ -12,14 +12,14 @@ let tv_ip_address = '' // Set default TV IP address. This initial value does not
 function discover_ip(callback) {
   arpscanner(function(err, data) {
     if (err) {
-      console.log('Error occurred during ARP scan: ' + err);
+      logger.error('Error occurred during ARP scan: ' + err);
       callback();
       return;
     }
 
     data.forEach((entry) => {
       if (entry.mac === tv_mac) {
-        console.log('Found TV IP address: ' + entry.ip);
+        logger.info('Found TV IP address: ' + entry.ip);
         tv_ip_address = entry.ip;
       }
     });
@@ -31,7 +31,7 @@ function discover_ip(callback) {
 function callLgtvAPI(retryTimes) {
   return new Promise((resolve, reject) => {
     let timeout = setTimeout(() => {
-      console.log('LGTV connection timeout');
+      logger.error('LGTV connection timeout');
       reject('operation timeout');
       return;
     }, timeout_ms);
@@ -52,8 +52,8 @@ let moduleFunctions =
 {
   toastFunction : function(message, retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -72,7 +72,8 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error toastFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
@@ -85,8 +86,8 @@ let moduleFunctions =
   },
   turnOffFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -103,8 +104,8 @@ let moduleFunctions =
   },
   setVolumeFunction : function(vol, retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -122,128 +123,126 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error setVolumeFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.setVolumeFunction(vol, retryTimes - 1, res);
       });
     });
   },
+  /*
+   * This function is created just for testing purpose.
+   * Have not thought about how to use it...
+   */
   volumeUpFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
-
     callLgtvAPI().then(() => {
-      if (!volumeControl) {
-        res.sendStatus(400);
-        return;
-      }
-
       lgtv.input_volumeup((err, response) => {
         lgtv.disconnect(() => {
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error volumeUpFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.volumeUpFunction(retryTimes - 1, res);
       });
     });
   },
+  /*
+   * This function is created just for testing purpose.
+   * Have not thought about how to use it...
+   */
   volumeDownFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
 
     callLgtvAPI().then(() => {
-      if (!volumeControl) {
-        res.sendStatus(400);
-        return;
-      }
-
       lgtv.input_volumedown((err, response) => {
         lgtv.disconnect(() => {
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error volumeDownFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.volumeDownFunction(retryTimes - 1, res);
       });
     });
   },
-  controlVolumeFunction : function(volumeControl, retryTimes, res) {
+  controlVolumeFunction : function(volumeChange, volumeChangeDirection, retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!volumeChange || !volumeChangeDirection ||
+        (volumeChangeDirection.toLowerCase() != 'up' && volumeChangeDirection.toLowerCase() != 'down')) {
+      logger.error('Invalid volume control parameters. volumeChange: ' + volumeChange
+                                        + ', volumeChangeDirection: ' + volumeChangeDirection);
       res.sendStatus(400);
       return;
     }
 
     callLgtvAPI().then(() => {
-      if (!volumeControl) {
-        res.sendStatus(400);
-        return;
-      }
-
-      let volumeControlArray = volumeControl.split(/\s+/);
-      let volumeControlTarget = volumeControlArray[0];
-      if (!volumeControlTarget ||
-            volumeControlTarget.toUpperCase() != 'UP' ||
-            volumeControlTarget.toUpperCase() != 'DOWN') {
-        console.log("Invalid volume control input.");
-        res.sendStatus(400);
-        return;
-      }
-
-      let volumeChangeStep = volumeControlArray.length;
-
-      let callbackFunction = (err, response) => {
-        lgtv.disconnect(() => {
-          if (!err) {
-            res.sendStatus(200);
+      lgtv.volume((err, currentVolume) => {
+        if (!err) {
+          let newVolume = 0;
+          if (volumeChangeDirection === 'up') {
+            newVolume = currentVolume + volumeChange;
           } else {
-            res.sendStatus(400);
+            newVolume = currentVolume - volumeChange;
           }
-        });
-      };
-
-      if (volumeControlTarget.toUpperCase() === 'UP') {
-        lgtv.input_volumeup(callbackFunction);
-      } else {
-        lgtv.input_volumedown(callbackFunction);
-      }
+          newVolume = Math.max(newVolume, 0);
+          newVolume = Math.min(newVolume, 100);
+          lgtv.set_volume(newVolume, function(err, response) {
+            lgtv.disconnect(() => {
+              if (!err) {
+                res.sendStatus(200);
+              } else {
+                logger.error('Error in volume control function:' + err);
+                res.sendStatus(500);
+              }
+            });
+          });
+        }
+      });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
-        moduleFunctions.controlVolumeFunction(volumeControl, retryTimes - 1, res);
+        moduleFunctions.controlVolumeFunction(volumeChange, volumeChangeDirection, retryTimes - 1, res);
       });
     });
   },
   getVolumeFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -251,10 +250,14 @@ let moduleFunctions =
       lgtv.volume((err, retVolume) => {
         if (!err) {
           moduleFunctions.toastFunction(retVolume, retryTimes, res);
+          res.sendStatus(200);
+        } else {
+          logger.error('Error getVolumeFunction: ' + err);
+          res.sendStatus(500);
         }
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.getVolumeFunction(retryTimes - 1, res);
       });
@@ -262,8 +265,8 @@ let moduleFunctions =
   },
   toggleMuteFunction : function(setMute, retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -273,12 +276,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error toggleMuteFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.toggleMuteFunction(setMute, retryTimes - 1, res);
       });
@@ -286,8 +290,8 @@ let moduleFunctions =
   },
   playFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -296,11 +300,14 @@ let moduleFunctions =
         lgtv.disconnect(() => {
           if (!err) {
             res.sendStatus(200);
+          } else {
+            logger.error('Error playFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.playFunction(retryTimes - 1, res);
       });
@@ -308,8 +315,8 @@ let moduleFunctions =
   },
   pauseFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -318,11 +325,14 @@ let moduleFunctions =
         lgtv.disconnect(() => {
           if (!err) {
             res.sendStatus(200);
+          } else {
+            logger.error('Error pauseFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.pauseFunction(retryTimes - 1, res);
       });
@@ -330,8 +340,8 @@ let moduleFunctions =
   },
   stopFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -340,11 +350,14 @@ let moduleFunctions =
         lgtv.disconnect(() => {
           if (!err) {
             res.sendStatus(200);
+          } else {
+            logger.error('Error stopFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.stopFunction(retryTimes - 1, res);
       });
@@ -352,8 +365,8 @@ let moduleFunctions =
   },
   getAppListFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -363,12 +376,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error getAppListFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.getAppListFunction(retryTimes - 1, res);
       });
@@ -376,8 +390,8 @@ let moduleFunctions =
   },
   launchYoutubeFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -387,12 +401,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error launchYoutubeFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.launchYoutubeFunction(retryTimes - 1, res);
       });
@@ -400,8 +415,8 @@ let moduleFunctions =
   },
   launchAmazonInstantVideoFunction : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -411,12 +426,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error launchAmazonInstantVideoFunction: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.launchAmazonInstantVideoFunction(retryTimes - 1, res);
       });
@@ -424,8 +440,8 @@ let moduleFunctions =
   },
   switchToHDMI_1 : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -435,12 +451,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error switchToHDMI_1: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.switchToHDMI_1(retryTimes - 1, res);
       });
@@ -448,8 +465,8 @@ let moduleFunctions =
   },
   sendKey : function(key, retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -459,12 +476,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error sendKey(' + key + '): ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.sendKey(key, retryTimes - 1, res);
       });
@@ -472,8 +490,8 @@ let moduleFunctions =
   },
   playNext : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -486,15 +504,17 @@ let moduleFunctions =
                 if (!err) {
                   res.sendStatus(200);
                 } else {
-                  res.sendStatus(400);
+                  res.sendStatus(500);
                 }
               });
             });
           }, timeout_ms);
+        } else {
+          logger.error('Error playNext: ' + err);
         }
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.playNext(retryTimes - 1, res);
       });
@@ -502,8 +522,8 @@ let moduleFunctions =
   },
   mediaForward : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -513,12 +533,13 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error mediaForward: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.mediaForward(retryTimes - 1, res);
       });
@@ -526,8 +547,8 @@ let moduleFunctions =
   },
   mediaRewind : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
-      res.sendStatus(400);
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
       return;
     }
 
@@ -537,20 +558,86 @@ let moduleFunctions =
           if (!err) {
             res.sendStatus(200);
           } else {
-            res.sendStatus(400);
+            logger.error('Error mediaRewind: ' + err);
+            res.sendStatus(500);
           }
         });
       });
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.mediaRewind(retryTimes - 1, res);
       });
     });
   },
+  playProgressControl : function(direction, step, retryTimes, res) {
+    if (retryTimes <= 0) {
+      logger.error('Max attempt reached.');
+      res.sendStatus(500);
+      return;
+    }
+
+    const defaultStep = 1;
+    if (step === '?' || step == undefined) {
+      step = defaultStep;
+    }
+
+    const defaultDirection = 'MOVE';
+    if (direction === '?') {
+      direction = defaultDirection;
+    }
+
+    callLgtvAPI().then(() => {
+      let callbackFunction = (err, response) => {
+        lgtv.disconnect(() => {
+          if (!err) {
+            res.sendStatus(200);
+          } else {
+            logger.error('Error playProgressControl: ' + err);
+            res.sendStatus(500);
+          }
+        });
+      };
+
+      const playBackDelay = 200;
+      let playControlRecursive = (step, isForward, fn, err, response) => {
+        if (step == 0) {
+          lgtv.input_media_play((err, response) => {
+            callbackFunction(err, response);
+            return;
+          })
+        }
+
+        if (isForward) {
+          lgtv.input_media_forward((err) => {
+            setTimeout(() => {
+              playControlRecursive(step - 1, true, fn, err, response);
+            }, playBackDelay);
+          });
+        } else {
+          lgtv.input_media_rewind((err) => {
+            setTimeout(() => {
+              playControlRecursive(step - 1, false, fn, err, response);
+            }, playBackDelay);
+          });
+        }
+      };
+
+      if (direction.toUpperCase() === 'FORWARD' || direction.toUpperCase() === 'MOVE') {
+        playControlRecursive(step, true, callbackFunction);
+      } else {
+        playControlRecursive(step, false, callbackFunction);
+      }
+    }, (reject) => {
+      logger.error(reject + ' Retrying');
+      discover_ip(() => {
+        moduleFunctions.playProgressControl(direction, step, retryTimes - 1, res);
+      });
+    });
+  },
   passBeginning : function(retryTimes, res) {
     if (retryTimes <= 0) {
-      console.log('Max attempt reached.');
+      logger.error('Max attempt reached.');
       res.sendStatus(500);
       return;
     }
@@ -566,7 +653,7 @@ let moduleFunctions =
         setTimeout(() => {
           lgtv.input_media_forward((err) => {
             if (err) {
-              console.log("Error: " + err);
+              logger.error("Error: " + err);
               return;
             }
 
@@ -576,7 +663,8 @@ let moduleFunctions =
                   if(!err) {
                     res.sendStatus(200);
                   } else {
-                    res.sendStatus(400);
+                    logger.error('Error passBeginning: ' + err);
+                    res.sendStatus(500);
                   }
                 });
               });
@@ -590,7 +678,7 @@ let moduleFunctions =
 
       rewindCall(rewindStep);
     }, (reject) => {
-      console.error(reject + ' Retrying');
+      logger.error(reject + ' Retrying');
       discover_ip(() => {
         moduleFunctions.passBeginning(retryTimes - 1, res);
       });
